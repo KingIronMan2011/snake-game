@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEON SNAKE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+:root {
+  --bg:#030810;--snake:#00ffaa;--food:#ff2d6b;--accent:#00c8ff;--gold:#ffd700;
+  --glow-g:0 0 8px #00ffaa,0 0 20px #00ffaa88;
+  --glow-r:0 0 8px #ff2d6b,0 0 20px #ff2d6b88;
+  --glow-b:0 0 8px #00c8ff,0 0 20px #00c8ff88;
+  --glow-gold:0 0 8px #ffd700,0 0 20px #ffd70088;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:100vh;font-family:'Share Tech Mono',monospace;
+  color:var(--snake);overflow:hidden;user-select:none;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:200;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,170,.015) 2px,rgba(0,255,170,.015) 4px);}
+.wrapper{display:flex;flex-direction:column;align-items:center;gap:10px;}
+h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:2.2rem;letter-spacing:.3em;
+  color:var(--snake);text-shadow:var(--glow-g);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.hud{display:flex;gap:24px;font-size:.78rem;letter-spacing:.12em;color:#7799aa;flex-wrap:wrap;justify-content:center;}
+.hud span{color:var(--accent);font-size:1rem;}
+.hud .coins-hud span{color:var(--gold);text-shadow:var(--glow-gold);}
+.perk-bar{display:flex;gap:8px;min-height:22px;flex-wrap:wrap;justify-content:center;}
+.perk-tag{font-size:.6rem;letter-spacing:.08em;padding:2px 8px;border-radius:2px;border:1px solid;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+#gameCanvas{border:1px solid #00ffaa33;box-shadow:0 0 30px #00ffaa22,inset 0 0 30px #000a;image-rendering:pixelated;display:block;touch-action:none;}
+.controls{font-size:.65rem;letter-spacing:.1em;color:#2a3a4a;text-align:center;line-height:1.8;}
+.controls kbd{background:#0a1628;border:1px solid #1a3050;border-radius:3px;padding:1px 5px;color:#445566;}
+.nav-btns{display:flex;gap:10px;}
+.nav-btn{font-family:'Orbitron',sans-serif;font-size:.65rem;letter-spacing:.15em;padding:7px 16px;
+  border:1px solid #1a3050;background:transparent;color:#445566;cursor:pointer;border-radius:2px;
+  transition:all .2s;touch-action:manipulation;}
+.nav-btn:hover,.nav-btn:active{border-color:var(--accent);color:var(--accent);box-shadow:var(--glow-b);}
+.dpad{display:none;flex-direction:column;align-items:center;gap:4px;}
+.dpad-row{display:flex;gap:4px;}
+.dpad-btn{width:54px;height:54px;background:#0a1628;border:1px solid #00ffaa44;border-radius:8px;
+  color:var(--snake);font-size:1.3rem;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.dpad-btn:active{background:#00ffaa22;}
+.dpad-btn.center{background:#060f20;color:#334455;font-size:.55rem;letter-spacing:.08em;font-family:'Share Tech Mono',monospace;border-color:#1a3050;}
+.dpad-btn.center:active{background:#00ffaa18;color:var(--snake);}
+@media(max-width:500px){h1{font-size:1.4rem;}.hud{gap:14px;font-size:.7rem;}.controls{display:none;}.dpad{display:flex;}.wrapper{gap:7px;}}
+@media(pointer:coarse){.dpad{display:flex;}.controls{display:none;}}
+
+/* OVERLAYS */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(3,8,16,.94);z-index:50;gap:16px;padding:20px;overflow-y:auto;}
+.screen.active{display:flex;}
+#mainOverlay h2{font-family:'Orbitron',sans-serif;font-weight:700;font-size:2rem;letter-spacing:.25em;}
+.overlay-score{font-size:1rem;color:#7799aa;letter-spacing:.15em;}
+.overlay-score span{color:var(--food);text-shadow:var(--glow-r);font-size:1.4rem;}
+.overlay-coins{font-size:.85rem;letter-spacing:.15em;color:#7799aa;}
+.overlay-coins span{color:var(--gold);text-shadow:var(--glow-gold);font-size:1.1rem;}
+.primary-btn{font-family:'Orbitron',sans-serif;font-size:.9rem;letter-spacing:.2em;padding:12px 36px;
+  border:1px solid var(--snake);background:transparent;color:var(--snake);cursor:pointer;
+  text-shadow:var(--glow-g);box-shadow:0 0 15px #00ffaa33;transition:all .2s;border-radius:2px;touch-action:manipulation;}
+.primary-btn:hover,.primary-btn:active{background:#00ffaa18;box-shadow:0 0 25px #00ffaa55;}
+.rec-text{font-size:.7rem;color:#00ffaa;letter-spacing:.1em;min-height:1em;}
+
+/* SHOP */
+#shopOverlay h2{font-family:'Orbitron',sans-serif;font-size:1.5rem;letter-spacing:.2em;color:var(--gold);text-shadow:var(--glow-gold);}
+.shop-coins{font-size:.85rem;letter-spacing:.12em;color:#7799aa;}
+.shop-coins span{color:var(--gold);text-shadow:var(--glow-gold);}
+.shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:480px;}
+@media(max-width:420px){.shop-grid{grid-template-columns:1fr;}}
+.shop-item{background:#060f20;border:1px solid #1a3050;border-radius:6px;padding:12px;
+  display:flex;flex-direction:column;gap:5px;transition:border-color .2s;}
+.shop-item.owned{border-color:#00ffaa44;background:#031a10;}
+.shop-item.active-perk{border-color:var(--gold);background:#1a1000;}
+.shop-item.maxed{opacity:.55;}
+.item-icon{font-size:1.3rem;}
+.item-name{font-size:.7rem;letter-spacing:.1em;color:var(--accent);}
+.item-desc{font-size:.58rem;color:#4a6070;line-height:1.5;}
+.item-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;}
+.item-cost{font-size:.68rem;color:var(--gold);}
+.item-cost.owned-label{color:#00ffaa;}
+.item-level{font-size:.58rem;color:#334455;margin-top:2px;}
+.buy-btn{font-size:.58rem;letter-spacing:.1em;padding:4px 10px;border:1px solid #1a3050;
+  background:transparent;color:#445566;border-radius:2px;cursor:pointer;
+  font-family:'Share Tech Mono',monospace;transition:all .15s;touch-action:manipulation;}
+.buy-btn.can-buy{border-color:var(--gold);color:var(--gold);}
+.buy-btn.can-buy:hover,.buy-btn.can-buy:active{background:#1a1000;}
+.buy-btn.toggle-on{border-color:var(--snake);color:var(--snake);}
+.buy-btn.toggle-on:hover{background:#001a10;}
+.shop-note{font-size:.58rem;color:#2a3a4a;letter-spacing:.07em;text-align:center;max-width:440px;}
+
+/* TUTORIAL */
+.tut-container{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:340px;padding:20px;}
+.tut-step{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;}
+.tut-step.active{display:flex;}
+.tut-icon{font-size:2.8rem;filter:drop-shadow(0 0 8px #00ffaa88);}
+.tut-title{font-family:'Orbitron',sans-serif;font-size:.95rem;letter-spacing:.2em;color:var(--snake);}
+.tut-text{font-size:.73rem;color:#7799aa;line-height:1.9;letter-spacing:.04em;}
+.tut-text strong{color:var(--accent);}
+.tut-progress{display:flex;gap:8px;}
+.tut-dot{width:8px;height:8px;border-radius:50%;background:#1a3050;transition:background .3s;}
+.tut-dot.active{background:var(--snake);box-shadow:var(--glow-g);}
+.tut-nav{display:flex;gap:12px;}
+.tut-btn{font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:.15em;padding:9px 22px;
+  border:1px solid #1a3050;background:transparent;color:#556677;cursor:pointer;border-radius:2px;transition:all .2s;touch-action:manipulation;}
+.tut-btn.next{border-color:var(--snake);color:var(--snake);}
+.tut-btn.next:hover,.tut-btn.next:active{background:#00ffaa18;}
+.tut-btn.skip{font-size:.6rem;}
+.tut-btn.skip:hover{color:#445566;}
+
+/* TOAST */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-70px);
+  background:#0a1628;border:1px solid #00ffaa44;border-radius:4px;padding:8px 20px;
+  font-size:.75rem;letter-spacing:.1em;color:var(--snake);z-index:300;
+  transition:transform .3s ease;pointer-events:none;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <h1>NEON SNAKE</h1>
+  <div class="hud">
+    <div>PUNKTE <span id="score">0</span></div>
+    <div>REKORD <span id="highscore">0</span></div>
+    <div>LEVEL <span id="level">1</span></div>
+    <div class="coins-hud">COINS <span id="coinsHud">0</span></div>
+  </div>
+  <div class="perk-bar" id="perkBar"></div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div class="controls">
+    <kbd>↑↓←→</kbd> / <kbd>WASD</kbd> Bewegen &nbsp;·&nbsp; <kbd>SPACE</kbd> Pause
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn" id="openShopBtn">🛒 SHOP</button>
+    <button class="nav-btn" id="openTutBtn">? TUTORIAL</button>
+  </div>
+  <div class="dpad">
+    <div class="dpad-row"><button class="dpad-btn" id="btnUp">▲</button></div>
+    <div class="dpad-row">
+      <button class="dpad-btn" id="btnLeft">◀</button>
+      <button class="dpad-btn center" id="btnPause">II</button>
+      <button class="dpad-btn" id="btnRight">▶</button>
+    </div>
+    <div class="dpad-row"><button class="dpad-btn" id="btnDown">▼</button></div>
+  </div>
+</div>
+
+<!-- MAIN OVERLAY -->
+<div class="screen active" id="mainOverlay">
+  <h2 id="mainTitle" style="color:var(--snake);text-shadow:var(--glow-g)">NEON SNAKE</h2>
+  <div class="overlay-score" id="mainScore" style="display:none">PUNKTE: <span id="finalScore">0</span></div>
+  <div class="overlay-coins" id="mainCoins" style="display:none">VERDIENT: <span id="earnedCoins">0</span> 🪙</div>
+  <button class="primary-btn" id="startBtn">STARTEN</button>
+  <div class="nav-btns">
+    <button class="nav-btn" id="mainShopBtn">🛒 SHOP</button>
+    <button class="nav-btn" id="mainTutBtn">? TUTORIAL</button>
+  </div>
+  <div class="rec-text" id="recText"></div>
+</div>
+
+<!-- SHOP OVERLAY -->
+<div class="screen" id="shopOverlay">
+  <h2>[ SHOP ]</h2>
+  <div class="shop-coins">COINS: <span id="shopCoins">0</span> 🪙</div>
+  <div class="shop-grid" id="shopGrid"></div>
+  <div class="shop-note">Upgrades sind permanent &nbsp;·&nbsp; Perks aktivierst du nach Belieben vor jeder Runde</div>
+  <button class="nav-btn" style="margin-top:4px;" id="closeShopBtn">✕ SCHLIESSEN</button>
+</div>
+
+<!-- TUTORIAL OVERLAY -->
+<div class="screen" id="tutorialOverlay">
+  <div class="tut-container">
+    <div class="tut-progress" id="tutProgress"></div>
+    <div id="tutSteps"></div>
+    <div class="tut-nav">
+      <button class="tut-btn skip" id="tutSkip">ÜBERSPRINGEN</button>
+      <button class="tut-btn next" id="tutNext">WEITER ▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const CELL=20, COLS=canvas.width/CELL, ROWS=canvas.height/CELL;
+
+// ── Persistent state ──────────────────────────────────────────────────
+let totalCoins = parseInt(localStorage.getItem('snakeCoins')||'0');
+let highscore  = parseInt(localStorage.getItem('snakeHigh') ||'0');
+const upgrades = JSON.parse(localStorage.getItem('snakeUpgrades')||'{}');
+const activePerks = new Set(JSON.parse(localStorage.getItem('snakePerks')||'[]'));
+
+function save(){
+  localStorage.setItem('snakeCoins',totalCoins);
+  localStorage.setItem('snakeHigh',highscore);
+  localStorage.setItem('snakeUpgrades',JSON.stringify(upgrades));
+  localStorage.setItem('snakePerks',JSON.stringify([...activePerks]));
+}
+
+// ── Shop definitions ──────────────────────────────────────────────────
+const ITEMS=[
+  {id:'speedCap',  type:'upgrade',icon:'⚡',name:'SPEED LIMIT',
+   desc:'Begrenzt deine Maximalgeschwindigkeit dauerhaft.',
+   levels:[{cost:30,label:'Lv1 · Cap 75ms'},{cost:65,label:'Lv2 · Cap 92ms'},{cost:110,label:'Lv3 · Cap 115ms'}]},
+  {id:'scoreBoost',type:'upgrade',icon:'✦',name:'SCORE BOOST',
+   desc:'Erhöht alle Punkte dauerhaft.',
+   levels:[{cost:40,label:'Lv1 · +25%'},{cost:85,label:'Lv2 · +60%'},{cost:150,label:'Lv3 · +100%'}]},
+  {id:'shield',    type:'perk',icon:'🛡',name:'SCHILD',    cost:50, desc:'Überlebst einmal eine Selbst-Kollision pro Runde.'},
+  {id:'bonusFood', type:'perk',icon:'🍎',name:'BONUS FOOD',cost:40, desc:'Immer zwei Früchte gleichzeitig auf dem Feld.'},
+  {id:'ghost',     type:'perk',icon:'👻',name:'GHOST',     cost:70, desc:'Passiere einmal durch dich selbst — du leuchtest violett.'},
+  {id:'magnet',    type:'perk',icon:'🧲',name:'MAGNET',    cost:80, desc:'Früchte bewegen sich zu dir, wenn du nah genug bist.'},
+  {id:'coinBoost', type:'perk',icon:'🪙',name:'COIN BOOST',cost:35, desc:'Verdopple alle Coin-Gewinne für eine Runde.'},
+  {id:'extraLife', type:'perk',icon:'❤️',name:'EXTRA LEBEN',cost:90,desc:'Starte mit einem zusätzlichen Leben. Zweite Chance!'},
+];
+
+function speedCap(){ const l=upgrades.speedCap||0; return [Infinity,75,92,115][l]; }
+function scoreMult(){ const l=upgrades.scoreBoost||0; return [1,1.25,1.6,2][l]; }
+
+// ── Game state ────────────────────────────────────────────────────────
+let snake,dir,nextDir,foods,score,level,speed,gameLoop,paused,gameOver;
+let shieldUsed,ghostUsed,lives,coinsThisRun;
+
+function initGame(){
+  snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+  dir={x:1,y:0}; nextDir={x:1,y:0};
+  score=0; level=1; coinsThisRun=0;
+  speed=130; paused=false; gameOver=false;
+  shieldUsed=false; ghostUsed=false;
+  lives=activePerks.has('extraLife')?2:1;
+  foods=[];
+  placeFood();
+  if(activePerks.has('bonusFood')) placeFood();
+  updateHUD(); updatePerkBar();
+}
+
+function placeFood(){
+  let p,t=0;
+  do{ p={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};t++; }
+  while(t<300&&(snake.some(s=>s.x===p.x&&s.y===p.y)||foods.some(f=>f.x===p.x&&f.y===p.y)));
+  foods.push(p);
+}
+
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('highscore').textContent=highscore;
+  document.getElementById('level').textContent=level;
+  document.getElementById('coinsHud').textContent=totalCoins;
+}
+
+function updatePerkBar(){
+  const bar=document.getElementById('perkBar'); bar.innerHTML='';
+  const clr={shield:'#00c8ff',bonusFood:'#ff2d6b',ghost:'#bb88ff',magnet:'#ffd700',coinBoost:'#ffd700',extraLife:'#ff6688'};
+  activePerks.forEach(pid=>{
+    if(!upgrades[pid]&&ITEMS.find(i=>i.id===pid)?.type==='perk') return;
+    const item=ITEMS.find(i=>i.id===pid); if(!item) return;
+    const tag=document.createElement('div'); tag.className='perk-tag';
+    const c=clr[pid]||'#00ffaa';
+    tag.style.cssText=`color:${c};border-color:${c}44;background:${c}11;`;
+    let lbl=item.icon+' '+item.name;
+    if(pid==='shield'&&shieldUsed) lbl+=' ✓';
+    if(pid==='ghost'&&ghostUsed)   lbl+=' ✓';
+    if(pid==='extraLife')          lbl+=' ×'+lives;
+    tag.textContent=lbl; bar.appendChild(tag);
+  });
+}
+
+// ── Game step ─────────────────────────────────────────────────────────
+function step(){
+  dir={...nextDir};
+  const head={x:(snake[0].x+dir.x+COLS)%COLS, y:(snake[0].y+dir.y+ROWS)%ROWS};
+
+  if(activePerks.has('magnet')&&upgrades.magnet){
+    foods.forEach(f=>{
+      const dx=f.x-head.x, dy=f.y-head.y;
+      if(Math.abs(dx)<=3&&Math.abs(dy)<=3){
+        f.x=(f.x-Math.sign(dx)+COLS)%COLS;
+        f.y=(f.y-Math.sign(dy)+ROWS)%ROWS;
+      }
+    });
+  }
+
+  if(snake.some(s=>s.x===head.x&&s.y===head.y)){
+    if(activePerks.has('shield')&&upgrades.shield&&!shieldUsed){
+      shieldUsed=true; updatePerkBar(); showToast('🛡 SCHILD AKTIVIERT!');
+    } else if(activePerks.has('ghost')&&upgrades.ghost&&!ghostUsed){
+      ghostUsed=true; updatePerkBar(); showToast('👻 GHOST MODE!');
+      snake.unshift(head); snake.pop(); draw(); return;
+    } else if(lives>1){
+      lives--;
+      snake=[{x:Math.floor(COLS/2),y:Math.floor(ROWS/2)},{x:Math.floor(COLS/2)-1,y:Math.floor(ROWS/2)}];
+      dir={x:1,y:0}; nextDir={x:1,y:0};
+      updatePerkBar(); showToast('❤️ LEBEN VERLOREN! '+lives+' ÜBRIG');
+      draw(); return;
+    } else return endGame();
+  }
+
+  snake.unshift(head);
+
+  const fi=foods.findIndex(f=>f.x===head.x&&f.y===head.y);
+  if(fi!==-1){
+    foods.splice(fi,1);
+    const pts=Math.round(10*level*scoreMult());
+    const coin=activePerks.has('coinBoost')&&upgrades.coinBoost?2:1;
+    score+=pts; coinsThisRun+=coin; totalCoins+=coin;
+    if(score>highscore) highscore=score;
+    level=Math.floor(score/100)+1;
+    const cap=speedCap();
+    speed=Math.max(Math.min(cap,55), Math.min(cap,130-(level-1)*12));
+    placeFood(); updateHUD(); save();
+    clearInterval(gameLoop); gameLoop=setInterval(step,speed);
+  } else {
+    snake.pop();
+  }
+  draw();
+}
+
+// ── Draw ─────────────────────────────────────────────────────────────
+function draw(){
+  ctx.fillStyle='#030810'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#0a1628'; ctx.lineWidth=.5;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,canvas.height);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(canvas.width,y*CELL);ctx.stroke();}
+
+  if(paused){
+    ctx.fillStyle='rgba(0,255,170,.07)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.save(); ctx.shadowColor='#00ffaa'; ctx.shadowBlur=15;
+    ctx.fillStyle='#00ffaa'; ctx.font='bold 20px Orbitron,monospace'; ctx.textAlign='center';
+    ctx.fillText('PAUSE',canvas.width/2,canvas.height/2); ctx.restore();
+  }
+
+  foods.forEach(f=>{
+    ctx.save(); ctx.shadowColor='#ff2d6b'; ctx.shadowBlur=18; ctx.fillStyle='#ff2d6b';
+    ctx.beginPath(); ctx.arc(f.x*CELL+CELL/2,f.y*CELL+CELL/2,CELL/2-2,0,Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.fillStyle='#ffaacc'; ctx.beginPath(); ctx.arc(f.x*CELL+CELL/2-2,f.y*CELL+CELL/2-2,3,0,Math.PI*2); ctx.fill();
+  });
+
+  const ghostOn=activePerks.has('ghost')&&upgrades.ghost&&ghostUsed;
+  snake.forEach((seg,i)=>{
+    const isHead=i===0;
+    const alpha=ghostOn?Math.max(.1,.5-i/snake.length*.4):Math.max(.25,1-i/snake.length*.7);
+    ctx.save();
+    if(isHead){ ctx.shadowColor='#00ffaa'; ctx.shadowBlur=20; ctx.fillStyle=ghostOn?'rgba(180,130,255,.85)':'#ffffff'; }
+    else { ctx.shadowColor=ghostOn?'#bb88ff':'#00ffaa'; ctx.shadowBlur=10; ctx.fillStyle=ghostOn?`rgba(180,130,255,${alpha})`:`rgba(0,255,170,${alpha})`; }
+    const p=isHead?1:2; rr(seg.x*CELL+p,seg.y*CELL+p,CELL-p*2,CELL-p*2,3); ctx.fill(); ctx.restore();
+    if(isHead){ ctx.fillStyle=ghostOn?'rgba(180,130,255,.3)':'rgba(0,255,170,.4)'; rr(seg.x*CELL+4,seg.y*CELL+4,CELL-14,CELL-14,2); ctx.fill(); }
+  });
+}
+
+function rr(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// ── End / Start ───────────────────────────────────────────────────────
+function endGame(){
+  gameOver=true; clearInterval(gameLoop);
+  if(score>highscore) highscore=score; save(); draw();
+  document.getElementById('mainTitle').textContent='GAME OVER';
+  document.getElementById('mainTitle').style.cssText='color:#ff2d6b;text-shadow:0 0 8px #ff2d6b,0 0 20px #ff2d6b88;font-family:Orbitron,sans-serif;font-weight:700;font-size:2rem;letter-spacing:.25em;';
+  document.getElementById('finalScore').textContent=score;
+  document.getElementById('earnedCoins').textContent=coinsThisRun;
+  document.getElementById('mainScore').style.display='block';
+  document.getElementById('mainCoins').style.display='block';
+  document.getElementById('startBtn').textContent='NOCHMAL';
+  document.getElementById('recText').textContent=score>=highscore&&score>0?'★ NEUER REKORD! ★':'';
+  document.getElementById('mainOverlay').classList.add('active');
+}
+
+function startGame(){
+  document.getElementById('mainOverlay').classList.remove('active');
+  initGame(); draw(); clearInterval(gameLoop); gameLoop=setInterval(step,speed);
+}
+document.getElementById('startBtn').addEventListener('click',startGame);
+
+// ── Shop ──────────────────────────────────────────────────────────────
+function renderShop(){
+  document.getElementById('shopCoins').textContent=totalCoins;
+  const grid=document.getElementById('shopGrid'); grid.innerHTML='';
+  ITEMS.forEach(item=>{
+    const div=document.createElement('div'); div.className='shop-item';
+    const lv=upgrades[item.id]||0;
+    const owned=item.type==='perk'?upgrades[item.id]===true:lv>0;
+    const maxed=item.type==='upgrade'&&lv>=item.levels.length;
+    const isOn=item.type==='perk'&&activePerks.has(item.id);
+    if(maxed) div.classList.add('maxed');
+    else if(isOn) div.classList.add('active-perk');
+    else if(owned) div.classList.add('owned');
+
+    let costHtml,btnTxt,btnCls='buy-btn',canAct=false;
+    if(item.type==='upgrade'){
+      if(maxed){ costHtml='<span class="item-cost" style="color:#334455">MAX</span>'; btnTxt='MAX'; }
+      else{
+        const nx=item.levels[lv];
+        costHtml=`<span class="item-cost">${nx.cost} 🪙</span>`;
+        btnTxt=lv===0?'KAUFEN':'UPGRADE'; canAct=totalCoins>=nx.cost;
+        if(canAct) btnCls+=' can-buy';
+      }
+    } else {
+      if(!owned){
+        costHtml=`<span class="item-cost">${item.cost} 🪙</span>`;
+        btnTxt='KAUFEN'; canAct=totalCoins>=item.cost;
+        if(canAct) btnCls+=' can-buy';
+      } else {
+        costHtml='<span class="item-cost owned-label">BESESSEN</span>';
+        btnTxt=isOn?'AN ✓':'AUS'; btnCls+=isOn?' toggle-on':''; canAct=true;
+      }
+    }
+    const lvLine=item.type==='upgrade'&&lv>0?`<div class="item-level">${item.levels[lv-1].label}</div>`:'';
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><span class="item-icon">${item.icon}</span><span class="item-name">${item.name}</span></div>
+      <div class="item-desc">${item.desc}</div>${lvLine}
+      <div class="item-footer">${costHtml}<button class="${btnCls}" data-id="${item.id}" ${!canAct&&!owned?'disabled':''}>${btnTxt}</button></div>`;
+    grid.appendChild(div);
+  });
+  grid.querySelectorAll('.buy-btn').forEach(b=>b.addEventListener('click',()=>buyOrToggle(b.dataset.id)));
+}
+
+function buyOrToggle(id){
+  const item=ITEMS.find(i=>i.id===id); if(!item) return;
+  if(item.type==='upgrade'){
+    const lv=upgrades[id]||0; if(lv>=item.levels.length) return;
+    const cost=item.levels[lv].cost;
+    if(totalCoins<cost){showToast('⚠ Nicht genug Coins!');return;}
+    totalCoins-=cost; upgrades[id]=lv+1; save(); renderShop(); updateHUD();
+    showToast('✅ '+item.name+' Lv'+(lv+1)+' freigeschaltet!');
+  } else {
+    if(!upgrades[id]){
+      if(totalCoins<item.cost){showToast('⚠ Nicht genug Coins!');return;}
+      totalCoins-=item.cost; upgrades[id]=true; save();
+    }
+    if(activePerks.has(id)){activePerks.delete(id);showToast(item.icon+' '+item.name+' deaktiviert');}
+    else{activePerks.add(id);showToast(item.icon+' '+item.name+' aktiviert!');}
+    save(); renderShop(); updateHUD();
+  }
+}
+
+function openShop(){
+  if(!gameOver&&gameLoop){paused=true;clearInterval(gameLoop);}
+  renderShop(); document.getElementById('shopOverlay').classList.add('active');
+}
+function closeShop(){
+  document.getElementById('shopOverlay').classList.remove('active');
+  if(!gameOver&&gameLoop&&paused){paused=false;gameLoop=setInterval(step,speed);}
+}
+document.getElementById('openShopBtn').addEventListener('click',openShop);
+document.getElementById('mainShopBtn').addEventListener('click',openShop);
+document.getElementById('closeShopBtn').addEventListener('click',closeShop);
+
+// ── Tutorial ──────────────────────────────────────────────────────────
+const TUT=[
+  {icon:'🐍',title:'WILLKOMMEN!',        text:'Steuere deine Schlange über das Feld und friss so viele <strong>Früchte</strong> wie möglich!'},
+  {icon:'🕹️',title:'STEUERUNG',           text:'Pfeiltasten oder <strong>WASD</strong> auf der Tastatur.<br>Auf dem Handy: <strong>D-Pad</strong> oder über das Spielfeld wischen.'},
+  {icon:'🌀',title:'WÄNDE',               text:'Berührst du eine Wand, kommst du auf der <strong>anderen Seite</strong> wieder raus. Links rein = rechts raus!'},
+  {icon:'💀',title:'GAME OVER',           text:'Beißt die Schlange sich selbst, ist das Spiel vorbei. Pass auf deinen <strong>eigenen Schwanz</strong> auf!'},
+  {icon:'⚡',title:'LEVELS & SPEED',      text:'Alle 100 Punkte steigst du ein Level auf — und die Schlange wird <strong>schneller</strong>. Halte durch!'},
+  {icon:'🪙',title:'COINS SAMMELN',       text:'Beim Fressen verdienst du <strong>Coins</strong>. Die kannst du im Shop für Upgrades und Perks ausgeben.'},
+  {icon:'🛒',title:'DER SHOP',            text:'<strong>Upgrades</strong> sind dauerhaft (z.B. Speed Limit, Score Boost).<br><strong>Perks</strong> schaltest du ein/aus — einmal kaufen, immer nutzbar.'},
+  {icon:'🚀',title:'LOS GEHTS!',          text:'Du bist bereit! Sammle Coins, baue deinen Build aus und jag den <strong>Highscore</strong>! Viel Erfolg!'},
+];
+
+let tutStep=0;
+function renderTut(){
+  const s=document.getElementById('tutSteps'), p=document.getElementById('tutProgress');
+  s.innerHTML=''; p.innerHTML='';
+  TUT.forEach((t,i)=>{
+    const d=document.createElement('div'); d.className='tut-step'+(i===tutStep?' active':'');
+    d.innerHTML=`<div class="tut-icon">${t.icon}</div><div class="tut-title">${t.title}</div><div class="tut-text">${t.text}</div>`;
+    s.appendChild(d);
+    const dot=document.createElement('div'); dot.className='tut-dot'+(i===tutStep?' active':'');
+    p.appendChild(dot);
+  });
+  document.getElementById('tutNext').textContent=tutStep===TUT.length-1?'✓ FERTIG':'WEITER ▶';
+}
+document.getElementById('tutNext').addEventListener('click',()=>{ tutStep++; if(tutStep>=TUT.length) closeTut(); else renderTut(); });
+document.getElementById('tutSkip').addEventListener('click',closeTut);
+function openTut(){ tutStep=0; renderTut(); document.getElementById('tutorialOverlay').classList.add('active'); }
+function closeTut(){ document.getElementById('tutorialOverlay').classList.remove('active'); localStorage.setItem('snakeTutDone','1'); }
+document.getElementById('openTutBtn').addEventListener('click',openTut);
+document.getElementById('mainTutBtn').addEventListener('click',openTut);
+
+// ── Toast ─────────────────────────────────────────────────────────────
+let toastTmr;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTmr); toastTmr=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('shopOverlay').classList.contains('active')||
+     document.getElementById('tutorialOverlay').classList.contains('active')) return;
+  if(e.key===' '){
+    e.preventDefault(); if(gameOver) return;
+    paused=!paused; if(paused) clearInterval(gameLoop); else gameLoop=setInterval(step,speed); draw(); return;
+  }
+  const D={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},
+            w:{x:0,y:-1},W:{x:0,y:-1},s:{x:0,y:1},S:{x:0,y:1},a:{x:-1,y:0},A:{x:-1,y:0},d:{x:1,y:0},D:{x:1,y:0}};
+  if(D[e.key]){e.preventDefault();const d=D[e.key];if(d.x!==-dir.x||d.y!==-dir.y)nextDir=d;}
+});
+
+// ── D-Pad ─────────────────────────────────────────────────────────────
+function sd(dx,dy){if(gameOver||paused)return;if(dx!==-dir.x||dy!==-dir.y)nextDir={x:dx,y:dy};}
+document.getElementById('btnUp').addEventListener('click',   ()=>sd(0,-1));
+document.getElementById('btnDown').addEventListener('click', ()=>sd(0,1));
+document.getElementById('btnLeft').addEventListener('click', ()=>sd(-1,0));
+document.getElementById('btnRight').addEventListener('click',()=>sd(1,0));
+document.getElementById('btnPause').addEventListener('click',()=>{
+  if(gameOver)return; paused=!paused; if(paused)clearInterval(gameLoop); else gameLoop=setInterval(step,speed); draw();
+});
+
+// ── Swipe ─────────────────────────────────────────────────────────────
+let tx=0,ty=0;
+canvas.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;e.preventDefault();},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)<10&&Math.abs(dy)<10)return;
+  if(Math.abs(dx)>Math.abs(dy))sd(dx>0?1:-1,0);else sd(0,dy>0?1:-1);
+  e.preventDefault();
+},{passive:false});
+
+// ── Boot ──────────────────────────────────────────────────────────────
+(function(){
+  ctx.fillStyle='#030810'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#0a1628'; ctx.lineWidth=.5;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,canvas.height);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(canvas.width,y*CELL);ctx.stroke();}
+  updateHUD();
+  if(!localStorage.getItem('snakeTutDone')) setTimeout(openTut,500);
+})();
+</script>
+</body>
+</html>
