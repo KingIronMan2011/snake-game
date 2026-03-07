@@ -57,7 +57,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .badge-soon{color:#334455;border-color:#1a2a3a;}
 .card-arrow{font-size:.8rem;color:#1a3050;transition:color .2s,transform .2s;}
 .game-card.coming-soon{opacity:.4;cursor:default;pointer-events:none;}
-.footer{font-size:clamp(.52rem,2vw,.6rem);letter-spacing:.15em;color:#1a2a3a;text-align:center;}
+.footer{display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:8px;}
+.footer-text{font-size:clamp(.55rem,2vw,.62rem);letter-spacing:.15em;color:#2e4455;text-align:center;}
+.footer-version{font-size:.55rem;letter-spacing:.18em;color:#445566;text-align:center;padding:3px 10px;border:1px solid #1a2a3a;border-radius:3px;}
 </style>
 </head>
 <body>
@@ -96,8 +98,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       </div>
     </div>
   </div>
-  <div class="footer">ARCADE · Built with Claude</div>
-  <div style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a2a3a;letter-spacing:.12em;text-align:center;padding-bottom:10px;">v1.0.4</div>
+  <div class="footer">
+    <span class="footer-text">ARCADE · Built with Claude</span>
+    <span class="footer-version">v1.0.5</span>
+  </div>
 </div>
 </body>
 </html>
