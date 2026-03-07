@@ -2,12 +2,8 @@
 
 > **Note:** This project is an experiment to see what Claude (Anthropic's AI) can build with zero manual code changes from the developer. Every line of code, design decision, bug fix, and deployment was done entirely by Claude through conversation.
 
----
-
 ## Live Site
-👉 **[KingIronMan2011.github.io/arcade-website](https://KingIronMan2011.github.io/arcade-website)**
-
----
+👉 **[arcade.king-mc.de](https://arcade.king-mc.de)**
 
 ## Games
 
@@ -16,8 +12,6 @@
 | 🐍 Neon Snake | ✅ Playable |
 | 👾 ??? | 🔜 Coming Soon |
 | 🎮 ??? | 🔜 Coming Soon |
-
----
 
 ## Neon Snake Features
 - Classic snake gameplay on a 20×20 neon grid
@@ -30,15 +24,11 @@
 - Fully responsive — sidebar layout on desktop, stacked D-pad layout on mobile
 - Swipe support on touchscreens
 
----
-
 ## Tech Stack
 - Plain HTML, CSS, JavaScript — no frameworks
 - GitHub Pages for hosting
 - GitHub Actions for automated deployment
 - Fonts: [Orbitron](https://fonts.google.com/specimen/Orbitron) + [Share Tech Mono](https://fonts.google.com/specimen/Share+Tech+Mono)
-
----
 
 ## Roadmap
 - [ ] Tetris
