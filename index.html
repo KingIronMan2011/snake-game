@@ -7,6 +7,12 @@
     <link rel="icon" type="image/x-icon" href="/arcade-website/favicon-arcade.ico" />
     <link rel="icon" type="image/svg+xml" href="/arcade-website/favicon-arcade.svg" />
     <link rel="apple-touch-icon" href="/arcade-website/apple-touch-icon-arcade.png" />
+    <!-- Fonts preloaded as link tag so CSS @import can't block rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <!-- Hard-code dark background so it shows immediately even before CSS bundle loads -->
+    <style>html,body{background:#030810;color:#8eaabb}</style>
     <title>ARCADE</title>
     <script>
       // Restore path after GitHub Pages 404 redirect

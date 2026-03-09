@@ -928,25 +928,34 @@ export default function TetrisPage() {
   const styleRef     = useRef<HTMLStyleElement | null>(null)
   const scriptRef    = useRef<HTMLScriptElement | null>(null)
 
+  const navigateRef = useRef(navigate)
+  navigateRef.current = navigate
+
   useEffect(() => {
     document.title = 'NEON TETRIS'
 
+    const container = containerRef.current
+    if (!container) return
+
+    // Inject scoped stylesheet
     const style = document.createElement('style')
     style.textContent = CSS
     document.head.appendChild(style)
     styleRef.current = style
 
-    const container = containerRef.current!
+    // Inject body HTML
     container.innerHTML = BODY_HTML
 
+    // Wire data-nav links to React Router
     container.querySelectorAll<HTMLElement>('[data-nav]').forEach(el => {
       el.style.cursor = 'pointer'
       el.addEventListener('click', (e) => {
         e.preventDefault()
-        navigate(el.dataset.nav!)
+        navigateRef.current(el.dataset.nav ?? '/')
       })
     })
 
+    // Run the game script
     const script = document.createElement('script')
     script.textContent = GAME_SCRIPT
     document.body.appendChild(script)
@@ -955,12 +964,14 @@ export default function TetrisPage() {
     return () => {
       styleRef.current?.remove()
       scriptRef.current?.remove()
-      const highId = window.setInterval(() => { /* */ }, 99999) as number
+      if (containerRef.current) containerRef.current.innerHTML = ''
+      // Clear any running intervals/timers injected by the game
+      const highId = window.setInterval(() => { /* noop */ }, 99999) as number
       for (let i = 0; i <= highId; i++) window.clearInterval(i)
-      const highRaf = window.requestAnimationFrame(() => { /* */ }) as number
+      const highRaf = window.requestAnimationFrame(() => { /* noop */ }) as number
       for (let i = 0; i <= highRaf; i++) window.cancelAnimationFrame(i)
     }
-  }, [navigate])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
