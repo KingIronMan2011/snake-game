@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - vite
   workflow_dispatch:
 
 permissions:
