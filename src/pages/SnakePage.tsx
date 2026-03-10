@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#030810">
-<title>NEON SNAKE</title>
-<link rel="icon" type="image/x-icon" href="public/favicon-snake.ico">
-<link rel="icon" type="image/svg+xml" href="public/favicon-snake.svg">
-<link rel="apple-touch-icon" href="public/apple-touch-icon-snake.png">
-<style>
+import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
 
 :root {
@@ -523,10 +516,9 @@ body::before {
   box-shadow: 0 4px 20px #0008;
 }
 #toast.show { transform: translateX(-50%) translateY(0); }
-</style>
-</head>
-<body>
+`
 
+const BODY_HTML = `
 <div class="layout">
 
   <!-- TOP BAR -->
@@ -646,8 +638,9 @@ body::before {
 </div>
 
 <div id="toast"></div>
+`
 
-<script>
+const GAME_SCRIPT = `
 // ── Canvas sizing ─────────────────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -740,7 +733,7 @@ function updatePerkBar() {
     if (pid==='shield' && shieldUsed) lbl += ' ✓';
     if (pid==='ghost'  && ghostUsed)  lbl += ' ✓';
     if (pid==='extraLife') lbl += ' ×'+lives;
-    tags.push(`<div class="perk-tag" style="color:${c};border-color:${c}44;background:${c}11">${lbl}</div>`);
+    tags.push(\`<div class="perk-tag" style="color:\${c};border-color:\${c}44;background:\${c}11">\${lbl}</div>\`);
   });
   bar.innerHTML = tags.length ? tags.join('') : '<span style="font-size:.58rem;color:#556677;letter-spacing:.06em;">— none —</span>';
 }
@@ -819,7 +812,7 @@ function draw() {
     const alpha=ghostOn?Math.max(.1,.5-i/snake.length*.4):Math.max(.25,1-i/snake.length*.7);
     ctx.save();
     if(isHead){ctx.shadowColor='#00ffaa';ctx.shadowBlur=20;ctx.fillStyle=ghostOn?'rgba(180,130,255,.85)':'#ffffff';}
-    else{ctx.shadowColor=ghostOn?'#bb88ff':'#00ffaa';ctx.shadowBlur=10;ctx.fillStyle=ghostOn?`rgba(180,130,255,${alpha})`:`rgba(0,255,170,${alpha})`;}
+    else{ctx.shadowColor=ghostOn?'#bb88ff':'#00ffaa';ctx.shadowBlur=10;ctx.fillStyle=ghostOn?\`rgba(180,130,255,\${alpha})\`:\`rgba(0,255,170,\${alpha})\`;}
     const p=isHead?1:2; rr(seg.x*C+p,seg.y*C+p,C-p*2,C-p*2,3); ctx.fill(); ctx.restore();
     if(isHead){ctx.fillStyle=ghostOn?'rgba(180,130,255,.3)':'rgba(0,255,170,.4)';rr(seg.x*C+4,seg.y*C+4,C-14,C-14,2);ctx.fill();}
   });
@@ -868,15 +861,15 @@ function renderShop() {
     let costHtml,btnTxt,btnCls='buy-btn',canAct=false;
     if(item.type==='upgrade'){
       if(maxed){costHtml='<span class="item-cost" style="color:#556677">MAX LEVEL</span>';btnTxt='MAX';}
-      else{const nx=item.levels[lv];costHtml=`<span class="item-cost">${nx.cost} 🪙</span>`;btnTxt=lv===0?'BUY':'UPGRADE';canAct=totalCoins>=nx.cost;if(canAct)btnCls+=' can-buy';}
+      else{const nx=item.levels[lv];costHtml=\`<span class="item-cost">\${nx.cost} 🪙</span>\`;btnTxt=lv===0?'BUY':'UPGRADE';canAct=totalCoins>=nx.cost;if(canAct)btnCls+=' can-buy';}
     } else {
-      if(!owned){costHtml=`<span class="item-cost">${item.cost} 🪙</span>`;btnTxt='BUY';canAct=totalCoins>=item.cost;if(canAct)btnCls+=' can-buy';}
+      if(!owned){costHtml=\`<span class="item-cost">\${item.cost} 🪙</span>\`;btnTxt='BUY';canAct=totalCoins>=item.cost;if(canAct)btnCls+=' can-buy';}
       else{costHtml='<span class="item-cost owned-label">OWNED</span>';btnTxt=isOn?'ON ✓':'OFF';btnCls+=isOn?' toggle-on':'';canAct=true;}
     }
-    const lvLine=item.type==='upgrade'&&lv>0?`<div class="item-level">${item.levels[lv-1].label}</div>`:'';
-    div.innerHTML=`<div class="item-header"><span class="item-icon">${item.icon}</span><span class="item-name">${item.name}</span></div>
-      <div class="item-desc">${item.desc}</div>${lvLine}
-      <div class="item-footer">${costHtml}<button class="${btnCls}" data-id="${item.id}" ${!canAct&&!owned?'disabled':''}>${btnTxt}</button></div>`;
+    const lvLine=item.type==='upgrade'&&lv>0?\`<div class="item-level">\${item.levels[lv-1].label}</div>\`:'';
+    div.innerHTML=\`<div class="item-header"><span class="item-icon">\${item.icon}</span><span class="item-name">\${item.name}</span></div>
+      <div class="item-desc">\${item.desc}</div>\${lvLine}
+      <div class="item-footer">\${costHtml}<button class="\${btnCls}" data-id="\${item.id}" \${!canAct&&!owned?'disabled':''}>\${btnTxt}</button></div>\`;
     grid.appendChild(div);
   });
   grid.querySelectorAll('.buy-btn').forEach(b=>b.addEventListener('click',()=>buyOrToggle(b.dataset.id)));
@@ -908,7 +901,7 @@ document.getElementById('closeShopBtn').addEventListener('click',closeShop);
 
 // ── Tutorial ──────────────────────────────────────────────────────────
 const TUT=[
-  {icon:'🐍',title:'WELCOME!',        text:'Guide your snake to eat <strong>fruits</strong> and rack up points. Don\'t bite yourself!'},
+  {icon:'🐍',title:'WELCOME!',        text:'Guide your snake to eat <strong>fruits</strong> and rack up points. Don\\'t bite yourself!'},
   {icon:'🕹️',title:'CONTROLS',        text:'Use <strong>Arrow Keys</strong> or <strong>WASD</strong> on desktop.<br>On mobile: <strong>D-Pad</strong> below the field, or swipe directly on it.'},
   {icon:'🌀',title:'WALLS',            text:'Hitting a wall sends you out the <strong>other side</strong>. Use it to your advantage!'},
   {icon:'💀',title:'GAME OVER',        text:'Biting your own tail ends the run. The longer you grow, the more careful you must be.'},
@@ -923,7 +916,7 @@ function renderTut(){
   s.innerHTML=''; p.innerHTML='';
   TUT.forEach((t,i)=>{
     const d=document.createElement('div'); d.className='tut-step'+(i===tutStep?' active':'');
-    d.innerHTML=`<div class="tut-icon">${t.icon}</div><div class="tut-title">${t.title}</div><div class="tut-text">${t.text}</div>`;
+    d.innerHTML=\`<div class="tut-icon">\${t.icon}</div><div class="tut-title">\${t.title}</div><div class="tut-text">\${t.text}</div>\`;
     s.appendChild(d);
     const dot=document.createElement('div'); dot.className='tut-dot'+(i===tutStep?' active':''); p.appendChild(dot);
   });
@@ -981,6 +974,57 @@ canvas.addEventListener('touchend',e=>{
 resizeCanvas();
 drawBg();
 updateHUD();
-</script>
-</body>
-</html>
+`
+
+export default function SnakePage() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const styleRef     = useRef<HTMLStyleElement | null>(null)
+  const scriptRef    = useRef<HTMLScriptElement | null>(null)
+  const navigate     = useNavigate()
+  const navigateRef  = useRef(navigate)
+  navigateRef.current = navigate
+
+  useEffect(() => {
+    document.title = 'NEON SNAKE'
+
+    const container = containerRef.current
+    if (!container) return
+
+    const style = document.createElement('style')
+    style.textContent = CSS
+    document.head.appendChild(style)
+    styleRef.current = style
+
+    container.innerHTML = BODY_HTML
+
+    container.querySelectorAll<HTMLElement>('[data-nav]').forEach(el => {
+      el.style.cursor = 'pointer'
+      el.addEventListener('click', (e) => {
+        e.preventDefault()
+        navigateRef.current(el.dataset.nav ?? '/')
+      })
+    })
+
+    const script = document.createElement('script')
+    script.textContent = GAME_SCRIPT
+    document.body.appendChild(script)
+    scriptRef.current = script
+
+    return () => {
+      styleRef.current?.remove()
+      scriptRef.current?.remove()
+      if (containerRef.current) containerRef.current.innerHTML = ''
+      const highId = window.setInterval(() => { /* noop */ }, 99999) as number
+      for (let i = 0; i <= highId; i++) window.clearInterval(i)
+      const highRaf = window.requestAnimationFrame(() => { /* noop */ }) as number
+      for (let i = 0; i <= highRaf; i++) window.cancelAnimationFrame(i)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: '100dvh', overflow: 'hidden', position: 'relative', zIndex: 1 }}
+    />
+  )
+}
