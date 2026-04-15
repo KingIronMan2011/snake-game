@@ -728,7 +728,8 @@ function updateClock() {
 
 setInterval(updateClock, 1000);
 updateClock();
-document.addEventListener('keydown', onKey);
+document.addEventListener('keydown', handleInput);
+document.addEventListener('touchstart', handleInput, {passive: false});
 init();
 </script>
 </body>
